@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: products
+    // Document ID: productId
+    // Fields:
+    //   - name: string (required)
+    //   - category: string (required, enum: pipa, linha, rabiola, acessorio)
+    //   - price: number (required, positive)
+    //   - cost: number (required, positive)
+    //   - stock: number (required)
+    //   - minStock: number (required)
+    //   - imageUrl: string (optional)
+    //
+    // Collection: sales
+    // Document ID: saleId
+    // Fields:
+    //   - items: list (required, objects with productId, name, quantity, price)
+    //   - total: number (required, positive)
+    //   - paymentMethod: string (required, enum: dinheiro, cartao_credito, cartao_debito, pix)
+    //   - timestamp: number (required)
+    //   - profit: number (required)
+    //   - uid: string (required, immutable)
+    //
+    // Collection: transactions
+    // Document ID: transactionId
+    // Fields:
+    //   - type: string (required, enum: receita, despesa)
+    //   - amount: number (required, positive)
+    //   - description: string (required)
+    //   - category: string (required)
+    //   - timestamp: number (required)
+    //   - uid: string (required, immutable)
+    //
+    // Collection: users
+    // Document ID: userId
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - email: string (required, immutable)
+    //   - role: string (required, enum: admin, user)
+    //   - displayName: string (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.category in ['pipa', 'linha', 'rabiola', 'acessorio'] &&
+             data.price is number && data.price >= 0 &&
+             data.cost is number && data.cost >= 0 &&
+             data.stock is number &&
+             data.minStock is number &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 500));
+    }
+
+    function isValidSale(data) {
+      return data.items is list && data.items.size() > 0 && data.items.size() < 50 &&
+             data.total is number && data.total >= 0 &&
+             data.paymentMethod in ['dinheiro', 'cartao_credito', 'cartao_debito', 'pix'] &&
+             data.timestamp is number &&
+             data.profit is number &&
+             data.uid == request.auth.uid &&
+             data.uid.size() < 100;
+    }
+
+    function isValidTransaction(data) {
+      return data.type in ['receita', 'despesa'] &&
+             data.amount is number && data.amount >= 0 &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 200 &&
+             data.category is string && data.category.size() < 50 &&
+             data.timestamp is number &&
+             data.uid == request.auth.uid &&
+             data.uid.size() < 100;
+    }
+
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.uid.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.email.size() < 100 &&
+             data.role in ['admin', 'user'] &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /products/{productId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidProduct(request.resource.data);
+    }
+
+    match /sales/{saleId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidSale(request.resource.data);
+      allow update, delete: if isAuthenticated();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidTransaction(request.resource.data);
+      allow update, delete: if isAuthenticated();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data);
+      allow update: if isAuthenticated() && isValidUser(request.resource.data);
+      allow delete: if isAuthenticated();
+    }
+  }
+}

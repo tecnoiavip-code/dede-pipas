@@ -1,0 +1,23 @@
+{
+  "name": "Dedé Pipas - Gestão",
+  "short_name": "Dedé Pipas",
+  "description": "Sistema de gestão para Dedé Pipas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0ea5e9",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/kites/192/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://picsum.photos/seed/kites/512/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
