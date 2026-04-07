@@ -166,7 +166,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="min-h-[100dvh] flex items-center justify-center bg-slate-50 p-4">
           <div className="glass-card p-8 max-w-md w-full text-center space-y-6">
             <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full mx-auto flex items-center justify-center">
               <AlertTriangle size={32} />
@@ -732,7 +732,7 @@ export default function App() {
 
   if (!isAuthReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-slate-50">
         <div className="w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -747,7 +747,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="h-screen flex flex-col md:flex-row bg-slate-50 overflow-hidden">
+      <div className="h-[100dvh] flex flex-col md:flex-row bg-slate-50 overflow-hidden">
       {/* Sidebar / Bottom Nav on Mobile */}
       <aside className="fixed bottom-0 w-full md:relative md:w-64 bg-sky-700 text-white flex flex-row md:flex-col shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-xl z-50 md:z-20 flex-shrink-0">
         <div className="hidden md:flex p-6 items-center gap-3 border-b border-sky-600/50">
@@ -850,7 +850,7 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden pb-[72px] md:pb-0">
+      <main className="flex-1 flex flex-col overflow-hidden pb-[72px] md:pb-0">
         {/* Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 z-10 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -878,9 +878,9 @@ export default function App() {
         </header>
         
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="flex-1 flex flex-col overflow-y-auto p-4 md:p-8">
           {activeTab === 'dashboard' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex-1 space-y-8 animate-in fade-in duration-500">
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="glass-card p-6 border-l-4 border-l-sky-500">
@@ -969,7 +969,7 @@ export default function App() {
           )}
 
           {activeTab === 'pos' && (
-            <div className="flex flex-col lg:flex-row gap-4 md:gap-8 h-full animate-in slide-in-from-right duration-500 overflow-y-auto lg:overflow-hidden pb-4 md:pb-0">
+            <div className="flex-1 flex flex-col lg:flex-row gap-4 md:gap-8 animate-in slide-in-from-right duration-500 overflow-y-auto lg:overflow-hidden pb-4 md:pb-0">
               {/* Product Selection */}
               <div className="flex-1 flex flex-col gap-4 md:gap-6 min-h-[500px] lg:min-h-0">
                 <div className="relative">
@@ -1093,7 +1093,7 @@ export default function App() {
           )}
 
           {activeTab === 'inventory' && (
-            <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex-1 space-y-6 animate-in fade-in duration-500">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold text-slate-800">Gestão de Estoque</h3>
                 <button 
@@ -1179,7 +1179,7 @@ export default function App() {
           )}
 
           {activeTab === 'finance' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex-1 space-y-8 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 className="text-2xl font-bold text-slate-800">Relatórios Financeiros</h3>
                 <div className="flex flex-wrap gap-3">
@@ -1350,7 +1350,7 @@ export default function App() {
           )}
 
           {activeTab === 'marketing' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex-1 space-y-8 animate-in fade-in duration-500">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold text-slate-800">Marketing & Presença Digital</h3>
                 <div className="flex gap-3">
@@ -1493,7 +1493,7 @@ export default function App() {
           )}
 
           {activeTab === 'settings' && (
-            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex-1 max-w-4xl mx-auto w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold text-slate-800">Configurações</h3>
                 <button 
