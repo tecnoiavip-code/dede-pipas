@@ -22,7 +22,6 @@ import {
   ChevronRight,
   Download,
   Filter,
-  Wind,
   X,
   Share2,
   Instagram,
@@ -65,6 +64,8 @@ import {
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider, 
   signOut,
   User as FirebaseUser
@@ -72,6 +73,23 @@ import {
 import { db, auth } from './firebase';
 import { cn } from './lib/utils';
 import { Product, Sale, Transaction, SaleItem } from './types';
+
+const Kite = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M12 2L5 12l7 10 7-10-7-10z" />
+    <path d="M12 2v20" />
+    <path d="M5 12h14" />
+    <path d="M12 22c0-3 2-4 4-4" />
+  </svg>
+);
 
 enum OperationType {
   CREATE = 'create',
@@ -179,16 +197,40 @@ const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export default function App() {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [userRole, setUserRole] = useState<'admin' | 'user' | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>({
+    uid: 'public-user',
+    email: 'public@dedepipas.com',
+    displayName: 'Usuário Público',
+    photoURL: null,
+    emailVerified: true,
+    isAnonymous: false,
+    phoneNumber: null,
+    providerId: 'google.com',
+    metadata: {},
+    providerData: [],
+    refreshToken: '',
+    tenantId: null,
+    delete: async () => {},
+    getIdToken: async () => '',
+    getIdTokenResult: async () => ({} as any),
+    reload: async () => {},
+    toJSON: () => ({})
+  } as any);
+  const [userRole, setUserRole] = useState<'admin' | 'user' | null>('admin');
+  const [isAuthReady, setIsAuthReady] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'pos' | 'inventory' | 'finance' | 'marketing' | 'settings'>('dashboard');
+  const [reportPeriod, setReportPeriod] = useState<'week' | 'month' | 'year' | 'custom'>('week');
+  const [customDateRange, setCustomDateRange] = useState<{ start: string, end: string }>({
+    start: format(new Date(), 'yyyy-MM-dd'),
+    end: format(new Date(), 'yyyy-MM-dd')
+  });
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cart, setCart] = useState<SaleItem[]>([]);
   const [paymentStep, setPaymentStep] = useState<'idle' | 'selecting' | 'pix_qr' | 'processing' | 'success'>('idle');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -213,6 +255,12 @@ export default function App() {
     }
   };
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productFormInputs, setProductFormInputs] = useState({
+    price: '',
+    cost: '',
+    stock: '',
+    minStock: ''
+  });
   const [productFormData, setProductFormData] = useState<Partial<Product>>({
     name: '',
     category: 'pipa',
@@ -311,6 +359,12 @@ export default function App() {
     if (product) {
       setEditingProduct(product);
       setProductFormData(product);
+      setProductFormInputs({
+        price: String(product.price).replace('.', ','),
+        cost: String(product.cost).replace('.', ','),
+        stock: String(product.stock),
+        minStock: String(product.minStock)
+      });
     } else {
       setEditingProduct(null);
       setProductFormData({
@@ -321,13 +375,18 @@ export default function App() {
         stock: 0,
         minStock: 0
       });
+      setProductFormInputs({
+        price: '',
+        cost: '',
+        stock: '',
+        minStock: ''
+      });
     }
     setIsProductModalOpen(true);
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
 
     const path = 'products';
     try {
@@ -344,71 +403,40 @@ export default function App() {
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (!user) return;
-    if (confirm('Tem certeza que deseja excluir este produto?')) {
-      const path = `products/${productId}`;
-      try {
-        await deleteDoc(doc(db, 'products', productId));
-        setCart(prev => prev.filter(item => item.productId !== productId));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, path);
-      }
+    const path = `products/${productId}`;
+    try {
+      await deleteDoc(doc(db, 'products', productId));
+      setCart(prev => prev.filter(item => item.productId !== productId));
+      setProductToDelete(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
     }
   };
 
-  // Firebase Auth and Real-time Listeners
+  // Firebase Auth and Real-time Listeners (Bypassed for public access)
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        // Ensure user document exists
-        const userDocRef = doc(db, 'users', u.uid);
-        try {
-          const userDoc = await getDocFromServer(userDocRef);
-          if (!userDoc.exists()) {
-            await setDoc(userDocRef, {
-              uid: u.uid,
-              email: u.email,
-              role: 'admin',
-              displayName: u.displayName || ''
-            });
-          }
-        } catch (error) {
-          console.error("Error ensuring user document:", error);
-        }
-      }
-      setUser(u);
-      setIsAuthReady(true);
-    });
-    return () => unsubscribeAuth();
+    // Mocking auth readiness
+    setIsAuthReady(true);
   }, []);
 
   useEffect(() => {
-    if (!user || !isAuthReady) {
-      setUserRole(null);
-      return;
-    }
-
-    const unsubUser = onSnapshot(doc(db, 'users', user.uid), (snapshot) => {
-      if (snapshot.exists()) {
-        setUserRole(snapshot.data().role);
-      } else {
-        // Fallback if doc doesn't exist yet
-        setUserRole(user.email === 'tecno.iavip@gmail.com' ? 'admin' : 'user');
-      }
-    }, (error) => console.error("Error fetching user role:", error));
-
-    return () => unsubUser();
-  }, [user, isAuthReady]);
+    // Mocking user role
+    setUserRole('admin');
+  }, []);
 
   useEffect(() => {
-    if (!user || !isAuthReady) return;
+    if (!isAuthReady) return;
 
     const testConnection = async () => {
       try {
         await getDocFromServer(doc(db, 'test', 'connection'));
       } catch (error) {
         if(error instanceof Error && error.message.includes('the client is offline')) {
-          console.error("Please check your Firebase configuration.");
+          const config = (db as any)._databaseId;
+          const projectId = config?.projectId || 'Desconhecido';
+          const databaseId = config?.databaseId || '(default)';
+          console.error(`Erro de Configuração Firebase: Não foi possível conectar ao projeto "${projectId}", banco "${databaseId}". Verifique se o ID do projeto está correto no Firebase Console.`);
+          alert(`ERRO DE CONEXÃO:\n\nO app não conseguiu conectar ao Firebase.\n\nProjeto: ${projectId}\nBanco: ${databaseId}\n\nVerifique se o ID do projeto está correto no seu Firebase Console.`);
         }
       }
     };
@@ -416,7 +444,7 @@ export default function App() {
 
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as Product);
-      setProducts(data.length > 0 ? data : INITIAL_PRODUCTS);
+      setProducts(data);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'products'));
 
     const unsubSales = onSnapshot(query(collection(db, 'sales'), orderBy('timestamp', 'desc')), (snapshot) => {
@@ -436,7 +464,7 @@ export default function App() {
 
   // Data Migration from localStorage
   useEffect(() => {
-    if (!user || !isAuthReady) return;
+    if (!isAuthReady) return;
 
     const migrateData = async () => {
       const isMigrated = localStorage.getItem('dede_pipas_migrated');
@@ -564,8 +592,6 @@ export default function App() {
     }
     setPaymentStep('processing');
     
-    if (!user) return;
-
     try {
       const saleId = Math.random().toString(36).substr(2, 9);
       const newSale: Sale = {
@@ -652,6 +678,58 @@ export default function App() {
     return data;
   }, [sales]);
 
+  const reportData = useMemo(() => {
+    let startDate = new Date();
+    let endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
+
+    if (reportPeriod === 'week') {
+      startDate.setDate(startDate.getDate() - 7);
+    } else if (reportPeriod === 'month') {
+      startDate.setMonth(startDate.getMonth() - 1);
+    } else if (reportPeriod === 'year') {
+      startDate.setFullYear(startDate.getFullYear() - 1);
+    } else if (reportPeriod === 'custom') {
+      startDate = new Date(customDateRange.start);
+      endDate = new Date(customDateRange.end);
+      endDate.setHours(23, 59, 59, 999);
+    }
+    startDate.setHours(0, 0, 0, 0);
+
+    const filteredSales = sales.filter(s => s.timestamp >= startDate.getTime() && s.timestamp <= endDate.getTime());
+    
+    // Group by day for the chart
+    const days: { [key: string]: { date: Date, total: number, profit: number } } = {};
+    let current = new Date(startDate);
+    while (current <= endDate) {
+      const key = format(current, 'yyyy-MM-dd');
+      days[key] = { date: new Date(current), total: 0, profit: 0 };
+      current.setDate(current.getDate() + 1);
+    }
+
+    filteredSales.forEach(s => {
+      const key = format(s.timestamp, 'yyyy-MM-dd');
+      if (days[key]) {
+        days[key].total += s.total;
+        days[key].profit += s.profit;
+      }
+    });
+
+    const chart = Object.values(days).map(d => ({
+      name: format(d.date, reportPeriod === 'year' ? 'MMM' : 'dd/MM', { locale: ptBR }),
+      vendas: d.total,
+      lucro: d.profit
+    }));
+
+    return {
+      sales: filteredSales,
+      totalRevenue: filteredSales.reduce((sum, s) => sum + s.total, 0),
+      totalProfit: filteredSales.reduce((sum, s) => sum + s.profit, 0),
+      count: filteredSales.length,
+      chart
+    };
+  }, [sales, reportPeriod, customDateRange]);
+
   if (!isAuthReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -660,31 +738,12 @@ export default function App() {
     );
   }
 
+  // Remove login check to show app directly
+  /*
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="glass-card p-12 max-w-md w-full text-center space-y-8 animate-in zoom-in-95 duration-500">
-          <div className="w-20 h-20 bg-sky-600 rounded-3xl mx-auto flex items-center justify-center text-white shadow-xl shadow-sky-200">
-            <Wind size={40} />
-          </div>
-          <div>
-            <h2 className="text-3xl font-black text-slate-800 mb-2">Dedé Pipas</h2>
-            <p className="text-slate-500">Gestão Profissional de Estoque e Vendas</p>
-          </div>
-          <button 
-            onClick={() => signInWithPopup(auth, new GoogleAuthProvider())}
-            className="w-full py-4 bg-white border-2 border-slate-100 rounded-2xl font-bold text-slate-700 flex items-center justify-center gap-3 hover:bg-slate-50 hover:border-sky-200 transition-all shadow-sm"
-          >
-            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-            Entrar com Google
-          </button>
-          <p className="text-xs text-slate-400">
-            Seus dados serão salvos com segurança na nuvem.
-          </p>
-        </div>
-      </div>
-    );
+    ...
   }
+  */
 
   return (
     <ErrorBoundary>
@@ -693,7 +752,7 @@ export default function App() {
       <aside className="w-full md:w-64 bg-sky-700 text-white flex flex-col shadow-xl z-20">
         <div className="p-6 flex items-center gap-3 border-b border-sky-600/50">
           <div className="bg-white p-2 rounded-xl shadow-inner">
-            <Wind className="text-sky-600 w-6 h-6" />
+            <Kite className="text-sky-600 w-6 h-6" />
           </div>
           <div>
             <h1 className="font-bold text-xl tracking-tight">Dedé Pipas</h1>
@@ -1103,7 +1162,7 @@ export default function App() {
                               <Edit2 size={18} />
                             </button>
                             <button 
-                              onClick={() => handleDeleteProduct(product.id)}
+                              onClick={() => setProductToDelete(product.id)}
                               className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                               title="Excluir Produto"
                             >
@@ -1121,13 +1180,47 @@ export default function App() {
 
           {activeTab === 'finance' && (
             <div className="space-y-8 animate-in fade-in duration-500">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 className="text-2xl font-bold text-slate-800">Relatórios Financeiros</h3>
-                <div className="flex gap-3">
-                  <button className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">
-                    <Filter size={16} />
-                    Filtrar
-                  </button>
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                    <button 
+                      onClick={() => setReportPeriod('week')}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-bold rounded-lg transition-all",
+                        reportPeriod === 'week' ? "bg-sky-600 text-white shadow-md" : "text-slate-500 hover:bg-slate-50"
+                      )}
+                    >
+                      Semana
+                    </button>
+                    <button 
+                      onClick={() => setReportPeriod('month')}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-bold rounded-lg transition-all",
+                        reportPeriod === 'month' ? "bg-sky-600 text-white shadow-md" : "text-slate-500 hover:bg-slate-50"
+                      )}
+                    >
+                      Mês
+                    </button>
+                    <button 
+                      onClick={() => setReportPeriod('year')}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-bold rounded-lg transition-all",
+                        reportPeriod === 'year' ? "bg-sky-600 text-white shadow-md" : "text-slate-500 hover:bg-slate-50"
+                      )}
+                    >
+                      Ano
+                    </button>
+                    <button 
+                      onClick={() => setReportPeriod('custom')}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-bold rounded-lg transition-all",
+                        reportPeriod === 'custom' ? "bg-sky-600 text-white shadow-md" : "text-slate-500 hover:bg-slate-50"
+                      )}
+                    >
+                      Personalizado
+                    </button>
+                  </div>
                   <button 
                     onClick={handleExportSpreadsheet}
                     className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-sm"
@@ -1138,14 +1231,74 @@ export default function App() {
                 </div>
               </div>
 
+              {reportPeriod === 'custom' && (
+                <div className="glass-card p-6 flex flex-wrap items-end gap-6 animate-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Data Inicial</label>
+                    <input 
+                      type="date" 
+                      value={customDateRange.start}
+                      onChange={e => setCustomDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      className="block w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition-all text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Data Final</label>
+                    <input 
+                      type="date" 
+                      value={customDateRange.end}
+                      onChange={e => setCustomDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      className="block w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition-all text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Report Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="glass-card p-6 border-l-4 border-l-sky-500">
+                  <p className="text-slate-500 text-sm font-medium mb-1">Vendas no Período</p>
+                  <h3 className="text-2xl font-bold text-slate-800">{reportData.count}</h3>
+                  <p className="text-xs text-sky-600 mt-2 font-semibold">Transações realizadas</p>
+                </div>
+                <div className="glass-card p-6 border-l-4 border-l-emerald-500">
+                  <p className="text-slate-500 text-sm font-medium mb-1">Faturamento no Período</p>
+                  <h3 className="text-2xl font-bold text-slate-800">R$ {reportData.totalRevenue.toFixed(2)}</h3>
+                  <p className="text-xs text-emerald-600 mt-2 font-semibold">Receita bruta</p>
+                </div>
+                <div className="glass-card p-6 border-l-4 border-l-amber-500">
+                  <p className="text-slate-500 text-sm font-medium mb-1">Lucro no Período</p>
+                  <h3 className="text-2xl font-bold text-slate-800">R$ {reportData.totalProfit.toFixed(2)}</h3>
+                  <p className="text-xs text-amber-600 mt-2 font-semibold">Resultado líquido</p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="glass-card p-8">
+                  <h4 className="font-bold text-slate-800 text-lg mb-8">Desempenho de Vendas</h4>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={reportData.chart}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                        <Tooltip 
+                          contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                        />
+                        <Bar dataKey="vendas" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={20} />
+                        <Bar dataKey="lucro" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
                 <div className="glass-card p-8">
                   <h4 className="font-bold text-slate-800 text-lg mb-8">Fluxo de Caixa</h4>
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData}>
+                      <LineChart data={reportData.chart}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} dy={10} />
                         <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
                         <Tooltip 
                           contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
@@ -1156,36 +1309,40 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="glass-card p-8">
-                  <h4 className="font-bold text-slate-800 text-lg mb-8">Transações Recentes</h4>
-                  <div className="space-y-4">
-                    {transactions.slice(0, 8).map(tx => (
-                      <div key={tx.id} className="flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition-colors">
-                        <div className="flex items-center gap-4">
-                          <div className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center",
-                            tx.type === 'receita' ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                          )}>
-                            {tx.type === 'receita' ? <Plus size={18} /> : <Minus size={18} />}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-800">{tx.description}</p>
-                            <p className="text-xs text-slate-500">{format(tx.timestamp, 'dd/MM/yyyy HH:mm')}</p>
-                          </div>
-                        </div>
-                        <p className={cn(
-                          "font-bold",
-                          tx.type === 'receita' ? "text-emerald-600" : "text-rose-600"
-                        )}>
-                          {tx.type === 'receita' ? '+' : '-'} R$ {tx.amount.toFixed(2)}
-                        </p>
-                      </div>
-                    ))}
-                    {transactions.length === 0 && (
-                      <div className="text-center py-12">
-                        <p className="text-slate-400 text-sm">Nenhuma transação registrada</p>
-                      </div>
-                    )}
+                <div className="lg:col-span-2 glass-card p-8">
+                  <h4 className="font-bold text-slate-800 text-lg mb-8">Vendas Detalhadas</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-100">
+                          <th className="p-4 text-xs uppercase tracking-widest font-bold text-slate-500">Data</th>
+                          <th className="p-4 text-xs uppercase tracking-widest font-bold text-slate-500">Itens</th>
+                          <th className="p-4 text-xs uppercase tracking-widest font-bold text-slate-500">Pagamento</th>
+                          <th className="p-4 text-xs uppercase tracking-widest font-bold text-slate-500">Total</th>
+                          <th className="p-4 text-xs uppercase tracking-widest font-bold text-slate-500">Lucro</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData.sales.map(sale => (
+                          <tr key={sale.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                            <td className="p-4 text-sm text-slate-600">{format(sale.timestamp, 'dd/MM/yyyy HH:mm')}</td>
+                            <td className="p-4 text-sm text-slate-600">{sale.items.length} itens</td>
+                            <td className="p-4">
+                              <span className="text-[10px] font-bold uppercase px-2 py-1 bg-slate-100 text-slate-600 rounded-md">
+                                {sale.paymentMethod.replace('_', ' ')}
+                              </span>
+                            </td>
+                            <td className="p-4 font-bold text-slate-800">R$ {sale.total.toFixed(2)}</td>
+                            <td className="p-4 font-bold text-emerald-600">R$ {sale.profit.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                        {reportData.sales.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="p-12 text-center text-slate-400 italic">Nenhuma venda encontrada para este período.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -1510,7 +1667,7 @@ export default function App() {
                 <div className="space-y-6">
                   <div className="glass-card p-6 bg-sky-700 text-white">
                     <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4">
-                      <Wind size={32} />
+                      <Kite className="w-8 h-8" />
                     </div>
                     <h4 className="font-bold text-lg mb-2">Plano Profissional</h4>
                     <p className="text-sky-100 text-sm mb-4">
@@ -1646,7 +1803,6 @@ export default function App() {
                 <button 
                   onClick={async () => {
                     setPaymentStep('processing');
-                    if (!user) return;
                     
                     try {
                       const saleId = Math.random().toString(36).substr(2, 9);
@@ -1777,10 +1933,16 @@ export default function App() {
                   <label className="text-sm font-bold text-slate-700">Preço de Venda (R$)</label>
                   <input 
                     required
-                    type="number" 
-                    step="0.01"
-                    value={productFormData.price}
-                    onChange={e => setProductFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
+                    type="text" 
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={productFormInputs.price}
+                    onChange={e => {
+                      const valStr = e.target.value;
+                      setProductFormInputs(prev => ({ ...prev, price: valStr }));
+                      const numeric = parseFloat(valStr.replace(',', '.'));
+                      setProductFormData(prev => ({ ...prev, price: isNaN(numeric) ? 0 : numeric }));
+                    }}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition-all"
                   />
                 </div>
@@ -1789,10 +1951,16 @@ export default function App() {
                   <label className="text-sm font-bold text-slate-700">Custo (R$)</label>
                   <input 
                     required
-                    type="number" 
-                    step="0.01"
-                    value={productFormData.cost}
-                    onChange={e => setProductFormData(prev => ({ ...prev, cost: parseFloat(e.target.value) }))}
+                    type="text" 
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={productFormInputs.cost}
+                    onChange={e => {
+                      const valStr = e.target.value;
+                      setProductFormInputs(prev => ({ ...prev, cost: valStr }));
+                      const numeric = parseFloat(valStr.replace(',', '.'));
+                      setProductFormData(prev => ({ ...prev, cost: isNaN(numeric) ? 0 : numeric }));
+                    }}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition-all"
                   />
                 </div>
@@ -1801,9 +1969,15 @@ export default function App() {
                   <label className="text-sm font-bold text-slate-700">Estoque Atual</label>
                   <input 
                     required
-                    type="number" 
-                    value={productFormData.stock}
-                    onChange={e => setProductFormData(prev => ({ ...prev, stock: parseInt(e.target.value) }))}
+                    type="text" 
+                    inputMode="numeric"
+                    value={productFormInputs.stock}
+                    onChange={e => {
+                      const valStr = e.target.value;
+                      setProductFormInputs(prev => ({ ...prev, stock: valStr }));
+                      const numeric = parseFloat(valStr.replace(',', '.'));
+                      setProductFormData(prev => ({ ...prev, stock: isNaN(numeric) ? 0 : numeric }));
+                    }}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition-all"
                   />
                 </div>
@@ -1812,9 +1986,15 @@ export default function App() {
                   <label className="text-sm font-bold text-slate-700">Estoque Mínimo</label>
                   <input 
                     required
-                    type="number" 
-                    value={productFormData.minStock}
-                    onChange={e => setProductFormData(prev => ({ ...prev, minStock: parseInt(e.target.value) }))}
+                    type="text" 
+                    inputMode="numeric"
+                    value={productFormInputs.minStock}
+                    onChange={e => {
+                      const valStr = e.target.value;
+                      setProductFormInputs(prev => ({ ...prev, minStock: valStr }));
+                      const numeric = parseFloat(valStr.replace(',', '.'));
+                      setProductFormData(prev => ({ ...prev, minStock: isNaN(numeric) ? 0 : numeric }));
+                    }}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition-all"
                   />
                 </div>
@@ -1836,6 +2016,35 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 text-center space-y-6 animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full mx-auto flex items-center justify-center">
+              <Trash2 size={32} />
+            </div>
+            <div>
+              <h4 className="text-xl font-bold text-slate-800 mb-2">Excluir Produto?</h4>
+              <p className="text-slate-500 text-sm">Esta ação não pode ser desfeita e o produto será removido do estoque.</p>
+            </div>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setProductToDelete(null)}
+                className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => handleDeleteProduct(productToDelete)}
+                className="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-200"
+              >
+                Excluir
+              </button>
+            </div>
           </div>
         </div>
       )}

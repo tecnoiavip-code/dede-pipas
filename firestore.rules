@@ -59,12 +59,14 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
+         (request.auth.token.email == "tecno.iavip@gmail.com" && request.auth.token.email_verified == true));
     }
 
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     }
 
     // ===============================================================
@@ -87,8 +89,7 @@ service cloud.firestore {
              data.paymentMethod in ['dinheiro', 'cartao_credito', 'cartao_debito', 'pix'] &&
              data.timestamp is number &&
              data.profit is number &&
-             data.uid == request.auth.uid &&
-             data.uid.size() < 100;
+             data.uid == request.auth.uid;
     }
 
     function isValidTransaction(data) {
@@ -97,45 +98,39 @@ service cloud.firestore {
              data.description is string && data.description.size() > 0 && data.description.size() < 200 &&
              data.category is string && data.category.size() < 50 &&
              data.timestamp is number &&
-             data.uid == request.auth.uid &&
-             data.uid.size() < 100;
+             data.uid == request.auth.uid;
     }
 
     function isValidUser(data) {
       return data.uid == request.auth.uid &&
-             data.uid.size() < 100 &&
              isValidEmail(data.email) &&
-             data.email.size() < 100 &&
              data.role in ['admin', 'user'] &&
              (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100));
     }
 
     // ===============================================================
-    // Rules
+    // Rules (PUBLIC ACCESS)
     // ===============================================================
 
     match /products/{productId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isValidProduct(request.resource.data);
+      allow read, write: if true;
     }
 
     match /sales/{saleId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidSale(request.resource.data);
-      allow update, delete: if isAuthenticated();
+      allow read, write: if true;
     }
 
     match /transactions/{transactionId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidTransaction(request.resource.data);
-      allow update, delete: if isAuthenticated();
+      allow read, write: if true;
     }
 
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidUser(request.resource.data);
-      allow update: if isAuthenticated() && isValidUser(request.resource.data);
-      allow delete: if isAuthenticated();
+      allow read, write: if true;
+    }
+
+    // Default allow for any other paths (be careful in production)
+    match /{allPaths=**} {
+      allow read, write: if true;
     }
   }
 }
