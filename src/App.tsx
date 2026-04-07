@@ -747,10 +747,10 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen flex flex-col md:flex-row bg-slate-50">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-sky-700 text-white flex flex-col shadow-xl z-20">
-        <div className="p-6 flex items-center gap-3 border-b border-sky-600/50">
+      <div className="h-screen flex flex-col md:flex-row bg-slate-50 overflow-hidden">
+      {/* Sidebar / Bottom Nav on Mobile */}
+      <aside className="fixed bottom-0 w-full md:relative md:w-64 bg-sky-700 text-white flex flex-row md:flex-col shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-xl z-50 md:z-20 flex-shrink-0">
+        <div className="hidden md:flex p-6 items-center gap-3 border-b border-sky-600/50">
           <div className="bg-white p-2 rounded-xl shadow-inner">
             <Kite className="text-sky-600 w-6 h-6" />
           </div>
@@ -760,60 +760,72 @@ export default function App() {
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 flex flex-row md:flex-col p-2 md:p-4 gap-1 md:space-y-2 overflow-x-auto md:overflow-visible no-scrollbar">
           <button 
             onClick={() => setActiveTab('dashboard')}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-              activeTab === 'dashboard' ? "bg-white text-sky-700 shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-100"
+              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 min-w-[72px] md:min-w-0",
+              activeTab === 'dashboard' ? "bg-white/20 md:bg-white text-white md:text-sky-700 shadow-sm md:shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-200 md:text-sky-100"
             )}
           >
             <LayoutDashboard size={20} />
-            Painel Geral
+            <span className="text-[10px] md:text-base">Painel</span>
           </button>
           <button 
             onClick={() => setActiveTab('pos')}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-              activeTab === 'pos' ? "bg-white text-sky-700 shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-100"
+              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 min-w-[72px] md:min-w-0",
+              activeTab === 'pos' ? "bg-white/20 md:bg-white text-white md:text-sky-700 shadow-sm md:shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-200 md:text-sky-100"
             )}
           >
             <ShoppingCart size={20} />
-            Ponto de Venda
+            <span className="text-[10px] md:text-base">Caixa</span>
           </button>
           <button 
             onClick={() => setActiveTab('inventory')}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-              activeTab === 'inventory' ? "bg-white text-sky-700 shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-100"
+              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 min-w-[72px] md:min-w-0",
+              activeTab === 'inventory' ? "bg-white/20 md:bg-white text-white md:text-sky-700 shadow-sm md:shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-200 md:text-sky-100"
             )}
           >
             <Package size={20} />
-            Estoque
+            <span className="text-[10px] md:text-base">Estoque</span>
           </button>
           <button 
             onClick={() => setActiveTab('finance')}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-              activeTab === 'finance' ? "bg-white text-sky-700 shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-100"
+              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 min-w-[72px] md:min-w-0",
+              activeTab === 'finance' ? "bg-white/20 md:bg-white text-white md:text-sky-700 shadow-sm md:shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-200 md:text-sky-100"
             )}
           >
             <TrendingUp size={20} />
-            Financeiro
+            <span className="text-[10px] md:text-base">Finanças</span>
           </button>
           <button 
             onClick={() => setActiveTab('marketing')}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-              activeTab === 'marketing' ? "bg-white text-sky-700 shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-100"
+              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 min-w-[72px] md:min-w-0",
+              activeTab === 'marketing' ? "bg-white/20 md:bg-white text-white md:text-sky-700 shadow-sm md:shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-200 md:text-sky-100"
             )}
           >
             <Megaphone size={20} />
-            Marketing
+            <span className="text-[10px] md:text-base">Mkt</span>
+          </button>
+          
+          {/* Settings button visible only on mobile in the nav */}
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={cn(
+              "md:hidden flex-1 flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all duration-200 min-w-[72px]",
+              activeTab === 'settings' ? "bg-white/20 text-white shadow-sm font-bold" : "hover:bg-sky-600/50 text-sky-200"
+            )}
+          >
+            <Settings size={20} />
+            <span className="text-[10px]">Config</span>
           </button>
         </nav>
 
-        <div className="p-4 border-t border-sky-600/50">
+        <div className="hidden md:block p-4 border-t border-sky-600/50">
           <button 
             onClick={() => setActiveTab('settings')}
             className={cn(
@@ -838,9 +850,9 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col h-full overflow-hidden pb-[72px] md:pb-0">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 z-10 flex-shrink-0">
           <div className="flex items-center gap-2">
             <h2 className="text-slate-500 font-medium capitalize">
               {activeTab === 'dashboard' && 'Painel Administrativo'}
@@ -855,7 +867,8 @@ export default function App() {
             {stats.lowStockCount > 0 && (
               <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-sm font-medium border border-amber-100">
                 <AlertTriangle size={16} />
-                {stats.lowStockCount} itens com estoque baixo
+                <span className="hidden md:inline">{stats.lowStockCount} itens com estoque baixo</span>
+                <span className="md:hidden">{stats.lowStockCount}</span>
               </div>
             )}
             <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold border-2 border-white shadow-sm">
@@ -864,21 +877,8 @@ export default function App() {
           </div>
         </header>
         
-        <div className="px-8 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-4">
-            <span className="text-slate-500">Usuário: <strong className="text-slate-700">{user.email}</strong></span>
-            <span className="text-slate-500">Status: <strong className="text-emerald-600">Conectado (Nuvem)</strong></span>
-          </div>
-          <button 
-            onClick={() => signOut(auth)}
-            className="text-rose-600 font-bold hover:underline"
-          >
-            Sair do Sistema
-          </button>
-        </div>
-
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
           {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-in fade-in duration-500">
               {/* Stats Grid */}
@@ -969,9 +969,9 @@ export default function App() {
           )}
 
           {activeTab === 'pos' && (
-            <div className="flex flex-col lg:flex-row gap-8 h-full animate-in slide-in-from-right duration-500">
+            <div className="flex flex-col lg:flex-row gap-4 md:gap-8 h-full animate-in slide-in-from-right duration-500 overflow-y-auto lg:overflow-hidden pb-4 md:pb-0">
               {/* Product Selection */}
-              <div className="flex-1 flex flex-col gap-6">
+              <div className="flex-1 flex flex-col gap-4 md:gap-6 min-h-[500px] lg:min-h-0">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                   <input 
@@ -981,7 +981,7 @@ export default function App() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pb-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-visible lg:overflow-y-auto pb-8">
                   {products.map(product => (
                     <button 
                       key={product.id}
@@ -1016,7 +1016,7 @@ export default function App() {
               </div>
 
               {/* Cart / Checkout */}
-              <div className="w-full lg:w-[400px] flex flex-col gap-6">
+              <div className="w-full lg:w-[400px] flex flex-col gap-6 flex-shrink-0 min-h-[400px] lg:min-h-0">
                 <div className="glass-card flex-1 flex flex-col overflow-hidden">
                   <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                     <h4 className="font-bold text-slate-800 flex items-center gap-2">
@@ -1105,8 +1105,8 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="glass-card overflow-hidden">
-                <table className="w-full text-left border-collapse">
+              <div className="glass-card overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[600px]">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-100">
                       <th className="p-6 text-xs uppercase tracking-widest font-bold text-slate-500">Produto</th>
@@ -1312,7 +1312,7 @@ export default function App() {
                 <div className="lg:col-span-2 glass-card p-8">
                   <h4 className="font-bold text-slate-800 text-lg mb-8">Vendas Detalhadas</h4>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-100">
                           <th className="p-4 text-xs uppercase tracking-widest font-bold text-slate-500">Data</th>
@@ -1714,7 +1714,7 @@ export default function App() {
       {/* Payment Modal Overlay */}
       {paymentStep !== 'idle' && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             {paymentStep === 'selecting' && (
               <div className="p-8">
                 <div className="flex items-center justify-between mb-8">
@@ -1891,8 +1891,8 @@ export default function App() {
       {/* Product Modal */}
       {isProductModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 flex-shrink-0">
               <h4 className="text-xl font-bold text-slate-800">
                 {editingProduct ? 'Editar Produto' : 'Novo Produto'}
               </h4>
@@ -1901,7 +1901,7 @@ export default function App() {
               </button>
             </div>
             
-            <form onSubmit={handleSaveProduct} className="p-8 space-y-6">
+            <form onSubmit={handleSaveProduct} className="p-4 md:p-8 space-y-6 overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2 space-y-2">
                   <label className="text-sm font-bold text-slate-700">Nome do Produto</label>
@@ -2023,7 +2023,7 @@ export default function App() {
       {/* Delete Confirmation Modal */}
       {productToDelete && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 text-center space-y-6 animate-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 text-center space-y-6 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full mx-auto flex items-center justify-center">
               <Trash2 size={32} />
             </div>
