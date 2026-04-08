@@ -430,6 +430,7 @@ export default function App() {
     const testConnection = async () => {
       try {
         await getDocFromServer(doc(db, 'test', 'connection'));
+        console.log('[Firebase] Conexão de teste bem-sucedida.');
       } catch (error) {
         if(error instanceof Error && error.message.includes('the client is offline')) {
           const config = (db as any)._databaseId;
@@ -437,6 +438,8 @@ export default function App() {
           const databaseId = config?.databaseId || '(default)';
           console.error(`Erro de Configuração Firebase: Não foi possível conectar ao projeto "${projectId}", banco "${databaseId}". Verifique se o ID do projeto está correto no Firebase Console.`);
           alert(`ERRO DE CONEXÃO:\n\nO app não conseguiu conectar ao Firebase.\n\nProjeto: ${projectId}\nBanco: ${databaseId}\n\nVerifique se o ID do projeto está correto no seu Firebase Console.`);
+        } else {
+          console.log('[Firebase] Conexão de teste falhou (esperado se documento não existir), mas o cliente está online.');
         }
       }
     };
@@ -477,6 +480,18 @@ export default function App() {
       const batch = writeBatch(db);
       let hasData = false;
 
+      // If no local data, check if Firestore is empty and seed it
+      if (!localProducts && !localSales && !localTransactions) {
+        const productsSnapshot = await getDocs(collection(db, 'products'));
+        if (productsSnapshot.empty) {
+          console.log('Firestore is empty. Seeding with initial products...');
+          INITIAL_PRODUCTS.forEach(p => {
+            batch.set(doc(db, 'products', p.id), p);
+          });
+          hasData = true;
+        }
+      }
+
       if (localProducts) {
         const data = JSON.parse(localProducts);
         data.forEach((p: Product) => {
@@ -505,9 +520,9 @@ export default function App() {
         try {
           await batch.commit();
           localStorage.setItem('dede_pipas_migrated', 'true');
-          console.log('Data migrated to Firebase successfully');
+          console.log('Data migrated/seeded to Firebase successfully');
         } catch (error) {
-          console.error('Migration failed:', error);
+          console.error('Migration/Seeding failed:', error);
         }
       } else {
         localStorage.setItem('dede_pipas_migrated', 'true');
@@ -526,6 +541,23 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('dede_pipas_settings', JSON.stringify(settings));
   }, [settings]);
+
+  const seedDatabase = async () => {
+    if (!confirm('Deseja popular o banco de dados com os produtos iniciais?')) return;
+    
+    const batch = writeBatch(db);
+    INITIAL_PRODUCTS.forEach(p => {
+      batch.set(doc(db, 'products', p.id), p);
+    });
+    
+    try {
+      await batch.commit();
+      alert('Banco de dados populado com sucesso!');
+    } catch (error) {
+      console.error('Seeding failed:', error);
+      alert('Falha ao popular o banco de dados.');
+    }
+  };
 
   // --- POS Logic ---
   const addToCart = (product: Product) => {
@@ -1496,17 +1528,25 @@ export default function App() {
             <div className="flex-1 max-w-4xl mx-auto w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold text-slate-800">Configurações</h3>
-                <button 
-                  onClick={() => {
-                    if(confirm('Deseja realmente resetar todos os dados? Esta ação não pode ser desfeita.')) {
-                      localStorage.clear();
-                      window.location.reload();
-                    }
-                  }}
-                  className="text-rose-600 text-sm font-bold hover:bg-rose-50 px-4 py-2 rounded-xl transition-all"
-                >
-                  Resetar Sistema
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={seedDatabase}
+                    className="text-sky-600 text-sm font-bold hover:bg-sky-50 px-4 py-2 rounded-xl transition-all border border-sky-100"
+                  >
+                    Popular Banco (Seed)
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if(confirm('Deseja realmente resetar todos os dados? Esta ação não pode ser desfeita.')) {
+                        localStorage.clear();
+                        window.location.reload();
+                      }
+                    }}
+                    className="text-rose-600 text-sm font-bold hover:bg-rose-50 px-4 py-2 rounded-xl transition-all"
+                  >
+                    Resetar Sistema
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

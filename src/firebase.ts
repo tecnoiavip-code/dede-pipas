@@ -25,6 +25,13 @@ const firebaseConfig = {
 const firestoreDatabaseId = getVal(import.meta.env.VITE_FIREBASE_DATABASE_ID, firebaseConfigData.firestoreDatabaseId);
 
 const app = initializeApp(firebaseConfig);
+
+// Debug log for connection (masking API key)
+console.log(`[Firebase] Inicializado para o projeto: ${firebaseConfig.projectId}`);
+if (import.meta.env.PROD) {
+  console.log(`[Firebase] Ambiente de Produção detectado.`);
+}
+
 // If databaseId is '(default)' or empty, use the default database by not passing the second argument
 export const db = (firestoreDatabaseId && firestoreDatabaseId !== '(default)') 
   ? getFirestore(app, firestoreDatabaseId) 
