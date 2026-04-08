@@ -4,13 +4,13 @@ import { getFirestore } from 'firebase/firestore';
 import firebaseConfigData from '../firebase-applet-config.json';
 
 // Helper to get value with fallback and strip quotes
-const getVal = (envVal: string | undefined, configVal: string) => {
+const getVal = (envVal: string | undefined, configVal: string | undefined) => {
   let val = envVal;
   if (!val || val.trim() === '' || val.startsWith('MY_')) {
     val = configVal;
   }
   // Strip surrounding quotes if present
-  return val.replace(/^["'](.+)["']$/, '$1');
+  return val ? val.replace(/^["'](.+)["']$/, '$1') : '';
 };
 
 const firebaseConfig = {
@@ -37,3 +37,14 @@ export const db = (firestoreDatabaseId && firestoreDatabaseId !== '(default)')
   ? getFirestore(app, firestoreDatabaseId) 
   : getFirestore(app);
 export const auth = getAuth(app);
+
+// Helper for debugging configuration in the UI
+export const getFirebaseDebugInfo = () => {
+  return {
+    projectId: firebaseConfig.projectId,
+    databaseId: firestoreDatabaseId || '(default)',
+    apiKeyMasked: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 6)}...${firebaseConfig.apiKey.substring(firebaseConfig.apiKey.length - 4)}` : 'Não configurada',
+    appId: firebaseConfig.appId,
+    isProd: import.meta.env.PROD
+  };
+};

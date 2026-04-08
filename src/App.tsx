@@ -32,7 +32,11 @@ import {
   MessageSquare,
   Send,
   Megaphone,
-  Edit2
+  Edit2,
+  Wifi,
+  WifiOff,
+  CheckCircle2,
+  ShieldCheck
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -70,7 +74,7 @@ import {
   signOut,
   User as FirebaseUser
 } from 'firebase/auth';
-import { db, auth } from './firebase';
+import { db, auth, getFirebaseDebugInfo } from './firebase';
 import { cn } from './lib/utils';
 import { Product, Sale, Transaction, SaleItem } from './types';
 
@@ -218,6 +222,8 @@ export default function App() {
   } as any);
   const [userRole, setUserRole] = useState<'admin' | 'user' | null>('admin');
   const [isAuthReady, setIsAuthReady] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+  const [debugInfo] = useState(getFirebaseDebugInfo());
   const [activeTab, setActiveTab] = useState<'dashboard' | 'pos' | 'inventory' | 'finance' | 'marketing' | 'settings'>('dashboard');
   const [reportPeriod, setReportPeriod] = useState<'week' | 'month' | 'year' | 'custom'>('week');
   const [customDateRange, setCustomDateRange] = useState<{ start: string, end: string }>({
@@ -428,18 +434,25 @@ export default function App() {
     if (!isAuthReady) return;
 
     const testConnection = async () => {
+      setConnectionStatus('checking');
       try {
         await getDocFromServer(doc(db, 'test', 'connection'));
         console.log('[Firebase] Conexão de teste bem-sucedida.');
+        setConnectionStatus('connected');
       } catch (error) {
         if(error instanceof Error && error.message.includes('the client is offline')) {
           const config = (db as any)._databaseId;
           const projectId = config?.projectId || 'Desconhecido';
           const databaseId = config?.databaseId || '(default)';
           console.error(`Erro de Configuração Firebase: Não foi possível conectar ao projeto "${projectId}", banco "${databaseId}". Verifique se o ID do projeto está correto no Firebase Console.`);
-          alert(`ERRO DE CONEXÃO:\n\nO app não conseguiu conectar ao Firebase.\n\nProjeto: ${projectId}\nBanco: ${databaseId}\n\nVerifique se o ID do projeto está correto no seu Firebase Console.`);
+          setConnectionStatus('error');
+          // Only alert if we are in the settings tab or on initial load
+          if (activeTab === 'settings') {
+            alert(`ERRO DE CONEXÃO:\n\nO app não conseguiu conectar ao Firebase.\n\nProjeto: ${projectId}\nBanco: ${databaseId}\n\nVerifique se o ID do projeto está correto no seu Firebase Console.`);
+          }
         } else {
           console.log('[Firebase] Conexão de teste falhou (esperado se documento não existir), mas o cliente está online.');
+          setConnectionStatus('connected');
         }
       }
     };
@@ -482,13 +495,17 @@ export default function App() {
 
       // If no local data, check if Firestore is empty and seed it
       if (!localProducts && !localSales && !localTransactions) {
-        const productsSnapshot = await getDocs(collection(db, 'products'));
-        if (productsSnapshot.empty) {
-          console.log('Firestore is empty. Seeding with initial products...');
-          INITIAL_PRODUCTS.forEach(p => {
-            batch.set(doc(db, 'products', p.id), p);
-          });
-          hasData = true;
+        try {
+          const productsSnapshot = await getDocs(collection(db, 'products'));
+          if (productsSnapshot.empty) {
+            console.log('Firestore is empty. Seeding with initial products...');
+            INITIAL_PRODUCTS.forEach(p => {
+              batch.set(doc(db, 'products', p.id), p);
+            });
+            hasData = true;
+          }
+        } catch (error) {
+          console.error('Failed to check if Firestore is empty:', error);
         }
       }
 
@@ -896,6 +913,17 @@ export default function App() {
             </h2>
           </div>
           <div className="flex items-center gap-4">
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+              connectionStatus === 'connected' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+              connectionStatus === 'error' ? "bg-rose-50 text-rose-600 border border-rose-100 animate-pulse" :
+              "bg-slate-50 text-slate-400 border border-slate-100"
+            )}>
+              {connectionStatus === 'connected' ? <Wifi size={12} /> : <WifiOff size={12} />}
+              <span className="hidden sm:inline">
+                {connectionStatus === 'connected' ? 'Online' : connectionStatus === 'error' ? 'Erro' : '...'}
+              </span>
+            </div>
             {stats.lowStockCount > 0 && (
               <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-sm font-medium border border-amber-100">
                 <AlertTriangle size={16} />
@@ -1742,6 +1770,45 @@ export default function App() {
                     >
                       <Download size={16} />
                       Exportar JSON
+                    </button>
+                  </div>
+
+                  <div className="glass-card p-6 space-y-4 border-l-4 border-l-sky-500">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-slate-800">Status do Firebase</h4>
+                      <div className={cn(
+                        "w-3 h-3 rounded-full",
+                        connectionStatus === 'connected' ? "bg-emerald-500" :
+                        connectionStatus === 'error' ? "bg-rose-500" : "bg-slate-300 animate-pulse"
+                      )}></div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="p-3 bg-slate-50 rounded-xl space-y-1">
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Projeto ID</p>
+                        <p className="text-sm font-mono text-slate-700 truncate">{debugInfo.projectId}</p>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-xl space-y-1">
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">API Key (Mascarada)</p>
+                        <p className="text-sm font-mono text-slate-700">{debugInfo.apiKeyMasked}</p>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-xl space-y-1">
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Ambiente</p>
+                        <p className="text-sm text-slate-700 flex items-center gap-2">
+                          {debugInfo.isProd ? (
+                            <><ShieldCheck size={14} className="text-emerald-600" /> Produção (Vercel)</>
+                          ) : (
+                            <><Edit2 size={14} className="text-amber-600" /> Desenvolvimento (Preview)</>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="w-full py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900 transition-all"
+                    >
+                      Testar Conexão Novamente
                     </button>
                   </div>
                 </div>
