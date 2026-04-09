@@ -26,7 +26,7 @@ function AppContent() {
     <ErrorBoundary>
       <div className="h-[100dvh] flex flex-col md:flex-row bg-slate-50 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 flex flex-col overflow-hidden pb-[72px] md:pb-0">
+        <main className="flex-1 flex flex-col overflow-hidden pb-[88px] md:pb-0 relative">
           <Header />
           <div className="flex-1 flex flex-col overflow-y-auto p-4 md:p-8">
             {activeTab === 'dashboard' && <Dashboard />}

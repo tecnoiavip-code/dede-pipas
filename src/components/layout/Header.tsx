@@ -4,12 +4,12 @@ import { useStore } from '../../contexts/StoreContext';
 import { cn } from '../../lib/utils';
 
 export function Header() {
-  const { activeTab, connectionStatus, stats } = useStore();
+  const { activeTab, setActiveTab, connectionStatus, stats } = useStore();
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 z-10 flex-shrink-0">
-      <div className="flex items-center gap-2">
-        <h2 className="text-slate-500 font-medium capitalize">
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-3 md:px-8 z-10 flex-shrink-0 gap-2">
+      <div className="flex items-center gap-2 overflow-hidden flex-1">
+        <h2 className="text-sm md:text-base text-slate-700 font-bold capitalize truncate">
           {activeTab === 'dashboard' && 'Painel Administrativo'}
           {activeTab === 'pos' && 'Caixa Aberto'}
           {activeTab === 'inventory' && 'Controle de Estoque'}
@@ -37,9 +37,12 @@ export function Header() {
             <span className="md:hidden">{stats.lowStockCount}</span>
           </div>
         )}
-        <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold border-2 border-white shadow-sm">
+        <button 
+          onClick={() => setActiveTab('settings')}
+          className="w-10 h-10 rounded-full bg-slate-900 md:bg-sky-100 flex items-center justify-center text-white md:text-sky-700 font-bold border-2 border-slate-100 shadow-sm hover:scale-105 active:scale-95 transition-transform flex-shrink-0"
+        >
           DP
-        </div>
+        </button>
       </div>
     </header>
   );
