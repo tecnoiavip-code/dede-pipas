@@ -246,6 +246,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
       setIsProductModalOpen(false);
     } catch (error) {
+      alert('Erro ao salvar no banco de dados: Permissão Negada.\nVerifique se o "Login Anônimo" e as "Regras do Firestore" estão configurados no Firebase.');
       handleFirestoreError(error, OperationType.WRITE, path);
     }
   };
