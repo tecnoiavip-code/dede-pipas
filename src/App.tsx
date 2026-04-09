@@ -1047,47 +1047,47 @@ export default function App() {
           )}
 
           {activeTab === 'pos' && (
-            <div className="flex-1 flex flex-col lg:flex-row gap-4 md:gap-8 animate-in slide-in-from-right duration-500 overflow-hidden pb-4 md:pb-0">
+            <div className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-8 animate-in slide-in-from-right duration-500 overflow-hidden pb-4 md:pb-0">
               {/* Product Selection */}
-              <div className="flex-1 flex flex-col gap-4 md:gap-6 overflow-hidden">
+              <div className="flex-1 flex flex-col gap-3 md:gap-6 overflow-hidden">
                 <div className="relative flex-shrink-0">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} md:size={20} />
                   <input 
                     type="text" 
                     value={posSearchTerm}
                     onChange={(e) => setPosSearchTerm(e.target.value)}
-                    placeholder="Buscar produto por ID, nome ou categoria..." 
-                    className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all"
+                    placeholder="Buscar produto..." 
+                    className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 text-sm md:text-base bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pb-8 pr-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 overflow-y-auto pb-4 md:pb-8 pr-1 md:pr-2">
                   {filteredPosProducts.map(product => (
                     <button 
                       key={product.id}
                       onClick={() => addToCart(product)}
                       disabled={product.stock <= 0}
                       className={cn(
-                        "group p-4 bg-white border border-slate-200 rounded-2xl text-left transition-all hover:shadow-md hover:border-sky-200 relative overflow-hidden",
+                        "group p-3 md:p-4 bg-white border border-slate-200 rounded-2xl text-left transition-all hover:shadow-md hover:border-sky-200 relative overflow-hidden flex flex-col",
                         product.stock <= 0 && "opacity-50 grayscale cursor-not-allowed"
                       )}
                     >
-                      <div className="mb-3">
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-sky-600 bg-sky-50 px-2 py-1 rounded-md">
+                      <div className="mb-2 md:mb-3">
+                        <span className="text-[9px] md:text-[10px] uppercase tracking-wider font-bold text-sky-600 bg-sky-50 px-2 py-1 rounded-md">
                           {product.category}
                         </span>
                       </div>
-                      <h5 className="font-bold text-slate-800 text-sm mb-1 group-hover:text-sky-700 transition-colors">{product.name}</h5>
-                      <p className="text-lg font-black text-slate-900">R$ {product.price.toFixed(2)}</p>
+                      <h5 className="font-bold text-slate-800 text-xs md:text-sm mb-1 group-hover:text-sky-700 transition-colors line-clamp-2 flex-1">{product.name}</h5>
+                      <p className="text-base md:text-lg font-black text-slate-900 mt-1">R$ {product.price.toFixed(2)}</p>
                       <p className={cn(
-                        "text-[10px] mt-2 font-semibold",
+                        "text-[9px] md:text-[10px] mt-1 md:mt-2 font-semibold",
                         product.stock <= product.minStock ? "text-amber-600" : "text-slate-400"
                       )}>
                         Estoque: {product.stock}
                       </p>
                       {product.stock <= 0 && (
                         <div className="absolute inset-0 bg-slate-900/5 flex items-center justify-center">
-                          <span className="bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase">Esgotado</span>
+                          <span className="bg-slate-800 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-full uppercase">Esgotado</span>
                         </div>
                       )}
                     </button>
@@ -1096,7 +1096,7 @@ export default function App() {
               </div>
 
               {/* Cart / Checkout */}
-              <div className="w-full lg:w-[400px] flex flex-col gap-6 flex-shrink-0 h-[45vh] lg:h-auto lg:min-h-0">
+              <div className="w-full lg:w-[400px] flex flex-col gap-4 md:gap-6 flex-shrink-0 h-[35vh] lg:h-auto lg:min-h-0">
                 <div className="glass-card flex-1 flex flex-col overflow-hidden">
                   <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                     <h4 className="font-bold text-slate-800 flex items-center gap-2">
