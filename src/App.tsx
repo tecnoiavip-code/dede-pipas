@@ -234,6 +234,7 @@ export default function App() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cart, setCart] = useState<SaleItem[]>([]);
+  const [posSearchTerm, setPosSearchTerm] = useState('');
   const [paymentStep, setPaymentStep] = useState<'idle' | 'selecting' | 'pix_qr' | 'processing' | 'success'>('idle');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
@@ -575,6 +576,23 @@ export default function App() {
       alert('Falha ao popular o banco de dados.');
     }
   };
+
+  const filteredPosProducts = useMemo(() => {
+    if (!posSearchTerm.trim()) return products;
+    const term = posSearchTerm.toLowerCase().trim();
+    return products.filter(p => {
+      const searchString = `${p.id} ${p.name} ${p.category}`.toLowerCase();
+      // Simple substring match
+      if (searchString.includes(term)) return true;
+      
+      // Basic fuzzy match (all characters in term appear in searchString in order)
+      let i = 0;
+      for (let j = 0; j < searchString.length && i < term.length; j++) {
+        if (searchString[j] === term[i]) i++;
+      }
+      return i === term.length;
+    });
+  }, [products, posSearchTerm]);
 
   // --- POS Logic ---
   const addToCart = (product: Product) => {
@@ -1036,13 +1054,15 @@ export default function App() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                   <input 
                     type="text" 
-                    placeholder="Buscar produto por nome ou categoria..." 
+                    value={posSearchTerm}
+                    onChange={(e) => setPosSearchTerm(e.target.value)}
+                    placeholder="Buscar produto por ID, nome ou categoria..." 
                     className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-visible lg:overflow-y-auto pb-8">
-                  {products.map(product => (
+                  {filteredPosProducts.map(product => (
                     <button 
                       key={product.id}
                       onClick={() => addToCart(product)}
