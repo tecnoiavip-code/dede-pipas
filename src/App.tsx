@@ -956,7 +956,7 @@ export default function App() {
         </header>
         
         {/* Content Area */}
-        <div className="flex-1 flex flex-col overflow-y-auto p-4 md:p-8">
+        <div className={cn("flex-1 flex flex-col p-4 md:p-8", activeTab === 'pos' ? "overflow-hidden" : "overflow-y-auto")}>
           {activeTab === 'dashboard' && (
             <div className="flex-1 space-y-8 animate-in fade-in duration-500">
               {/* Stats Grid */}
@@ -1047,10 +1047,10 @@ export default function App() {
           )}
 
           {activeTab === 'pos' && (
-            <div className="flex-1 flex flex-col lg:flex-row gap-4 md:gap-8 animate-in slide-in-from-right duration-500 overflow-y-auto lg:overflow-hidden pb-4 md:pb-0">
+            <div className="flex-1 flex flex-col lg:flex-row gap-4 md:gap-8 animate-in slide-in-from-right duration-500 overflow-hidden pb-4 md:pb-0">
               {/* Product Selection */}
-              <div className="flex-1 flex flex-col gap-4 md:gap-6 min-h-[500px] lg:min-h-0">
-                <div className="relative">
+              <div className="flex-1 flex flex-col gap-4 md:gap-6 overflow-hidden">
+                <div className="relative flex-shrink-0">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                   <input 
                     type="text" 
@@ -1061,7 +1061,7 @@ export default function App() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-visible lg:overflow-y-auto pb-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pb-8 pr-2">
                   {filteredPosProducts.map(product => (
                     <button 
                       key={product.id}
@@ -1096,7 +1096,7 @@ export default function App() {
               </div>
 
               {/* Cart / Checkout */}
-              <div className="w-full lg:w-[400px] flex flex-col gap-6 flex-shrink-0 min-h-[400px] lg:min-h-0">
+              <div className="w-full lg:w-[400px] flex flex-col gap-6 flex-shrink-0 h-[45vh] lg:h-auto lg:min-h-0">
                 <div className="glass-card flex-1 flex flex-col overflow-hidden">
                   <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                     <h4 className="font-bold text-slate-800 flex items-center gap-2">
