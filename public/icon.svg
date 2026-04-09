@@ -1,19 +1,69 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="kiteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#0369a1;stop-opacity:1" />
+    <!-- Background Gradient (Sky Blue) -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
     </linearGradient>
+    
+    <!-- Kite Panels Gradients -->
+    <linearGradient id="kiteTopLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="100%" stop-color="#eab308" />
+    </linearGradient>
+    <linearGradient id="kiteTopRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f97316" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+    <linearGradient id="kiteBottomLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#dc2626" />
+    </linearGradient>
+    <linearGradient id="kiteBottomRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#db2777" />
+    </linearGradient>
+
+    <!-- Shadow for depth -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
   </defs>
-  <!-- Kite Body -->
-  <path d="M50 5 L15 50 L50 95 L85 50 Z" fill="url(#kiteGrad)" stroke="#ffffff" stroke-width="2"/>
-  <!-- Cross Bars -->
-  <line x1="50" y1="5" x2="50" y2="95" stroke="#ffffff" stroke-width="1" stroke-dasharray="2"/>
-  <line x1="15" y1="50" x2="85" y2="50" stroke="#ffffff" stroke-width="1" stroke-dasharray="2"/>
-  <!-- Tail -->
-  <path d="M50 95 Q60 105 50 115 Q40 125 50 135" fill="none" stroke="#0ea5e9" stroke-width="3" stroke-linecap="round"/>
-  <!-- Rabiola (Tail bows) -->
-  <circle cx="55" cy="105" r="3" fill="#0ea5e9"/>
-  <circle cx="45" cy="115" r="3" fill="#0ea5e9"/>
-  <circle cx="55" cy="125" r="3" fill="#0ea5e9"/>
+
+  <!-- App Icon Background (Rounded Rect) -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Subtle Clouds in Background -->
+  <path d="M 100 180 Q 130 140 170 160 Q 200 130 240 160 Q 270 180 240 210 L 100 210 Z" fill="#ffffff" opacity="0.2" />
+  <path d="M 320 380 Q 350 340 390 360 Q 420 330 460 360 Q 490 380 460 410 L 320 410 Z" fill="#ffffff" opacity="0.15" />
+  <path d="M 380 120 Q 400 90 430 100 Q 450 80 470 100 Q 490 120 470 140 L 380 140 Z" fill="#ffffff" opacity="0.1" />
+
+  <!-- Kite Group with Shadow and Rotation -->
+  <g filter="url(#shadow)" transform="translate(256, 236) rotate(15) translate(-256, -236)">
+    
+    <!-- Tail (Rabiola) -->
+    <path d="M 256 356 Q 280 390 230 410 T 260 450" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" />
+    
+    <!-- Tail Bows (Fitinhas) -->
+    <path d="M 252 380 L 225 365 L 235 395 Z" fill="#fde047" />
+    <path d="M 245 410 L 275 395 L 260 425 Z" fill="#ef4444" />
+    <path d="M 252 440 L 225 425 L 235 455 Z" fill="#f97316" />
+
+    <!-- Kite Panels -->
+    <!-- Top Left -->
+    <path d="M 256 116 L 156 216 L 256 216 Z" fill="url(#kiteTopLeft)" />
+    <!-- Top Right -->
+    <path d="M 256 116 L 356 216 L 256 216 Z" fill="url(#kiteTopRight)" />
+    <!-- Bottom Left -->
+    <path d="M 156 216 L 256 356 L 256 216 Z" fill="url(#kiteBottomLeft)" />
+    <!-- Bottom Right -->
+    <path d="M 356 216 L 256 356 L 256 216 Z" fill="url(#kiteBottomRight)" />
+
+    <!-- Cross Sticks (Varetas) -->
+    <line x1="256" y1="116" x2="256" y2="356" stroke="#fef3c7" stroke-width="6" stroke-linecap="round" />
+    <line x1="156" y1="216" x2="356" y2="216" stroke="#fef3c7" stroke-width="6" stroke-linecap="round" />
+    
+    <!-- Center knot -->
+    <circle cx="256" cy="216" r="6" fill="#fef3c7" />
+  </g>
 </svg>
