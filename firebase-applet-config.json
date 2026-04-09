@@ -1,10 +1,9 @@
 {
-  "projectId": "dedepipasapp",
-  "appId": "1:1099247133305:web:63bbcf986dc629d8f3eaa8",
   "apiKey": "AIzaSyBlbghhLPH2ri3R950rtWsc92Qh4MQJ9y8",
   "authDomain": "dedepipasapp.firebaseapp.com",
-  "firestoreDatabaseId": "(default)",
+  "projectId": "dedepipasapp",
   "storageBucket": "dedepipasapp.firebasestorage.app",
   "messagingSenderId": "1099247133305",
-  "measurementId": ""
+  "appId": "1:1099247133305:web:63bbcf986dc629d8f3eaa8",
+  "firestoreDatabaseId": "(default)"
 }
