@@ -1841,49 +1841,63 @@ export default function App() {
       {/* Payment Modal Overlay */}
       {paymentStep !== 'idle' && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
             {paymentStep === 'selecting' && (
-              <div className="p-8">
-                <div className="flex items-center justify-between mb-8">
+              <div className="p-8 flex flex-col h-full max-h-[90vh]">
+                <div className="flex items-center justify-between mb-6 flex-shrink-0">
                   <h3 className="text-2xl font-bold text-slate-800">Pagamento</h3>
                   <button onClick={() => setPaymentStep('idle')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                     <X size={24} className="text-slate-400" />
                   </button>
                 </div>
                 
-                <div className="bg-sky-50 p-6 rounded-2xl mb-8 text-center">
+                <div className="bg-sky-50 p-6 rounded-2xl mb-6 text-center flex-shrink-0">
                   <p className="text-sky-600 font-bold text-sm uppercase tracking-widest mb-1">Total a Pagar</p>
                   <h4 className="text-4xl font-black text-sky-700">R$ {cartTotal.toFixed(2)}</h4>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Resumo do Carrinho no Modal */}
+                <div className="flex-1 overflow-y-auto mb-6 pr-2 space-y-3 min-h-[100px]">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest sticky top-0 bg-white pb-2">Resumo do Pedido</p>
+                  {cart.map(item => (
+                    <div key={item.productId} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-700">{item.quantity}x</span>
+                        <span className="text-slate-600 truncate max-w-[180px]">{item.name}</span>
+                      </div>
+                      <span className="font-semibold text-slate-800">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 flex-shrink-0">
                   <button 
                     onClick={() => finalizeSale('dinheiro')}
-                    className="flex flex-col items-center gap-3 p-6 border-2 border-slate-100 rounded-2xl hover:border-sky-500 hover:bg-sky-50 transition-all group"
+                    className="flex flex-col items-center gap-3 p-4 border-2 border-slate-100 rounded-2xl hover:border-sky-500 hover:bg-sky-50 transition-all group"
                   >
-                    <Banknote size={32} className="text-slate-400 group-hover:text-sky-600" />
-                    <span className="font-bold text-slate-700">Dinheiro</span>
+                    <Banknote size={28} className="text-slate-400 group-hover:text-sky-600" />
+                    <span className="font-bold text-slate-700 text-sm">Dinheiro</span>
                   </button>
                   <button 
                     onClick={() => finalizeSale('pix')}
-                    className="flex flex-col items-center gap-3 p-6 border-2 border-slate-100 rounded-2xl hover:border-sky-500 hover:bg-sky-50 transition-all group"
+                    className="flex flex-col items-center gap-3 p-4 border-2 border-slate-100 rounded-2xl hover:border-sky-500 hover:bg-sky-50 transition-all group"
                   >
-                    <QrCode size={32} className="text-slate-400 group-hover:text-sky-600" />
-                    <span className="font-bold text-slate-700">PIX</span>
+                    <QrCode size={28} className="text-slate-400 group-hover:text-sky-600" />
+                    <span className="font-bold text-slate-700 text-sm">PIX</span>
                   </button>
                   <button 
                     onClick={() => finalizeSale('cartao_debito')}
-                    className="flex flex-col items-center gap-3 p-6 border-2 border-slate-100 rounded-2xl hover:border-sky-500 hover:bg-sky-50 transition-all group"
+                    className="flex flex-col items-center gap-3 p-4 border-2 border-slate-100 rounded-2xl hover:border-sky-500 hover:bg-sky-50 transition-all group"
                   >
-                    <CreditCard size={32} className="text-slate-400 group-hover:text-sky-600" />
-                    <span className="font-bold text-slate-700">Débito</span>
+                    <CreditCard size={28} className="text-slate-400 group-hover:text-sky-600" />
+                    <span className="font-bold text-slate-700 text-sm">Débito</span>
                   </button>
                   <button 
                     onClick={() => finalizeSale('cartao_credito')}
-                    className="flex flex-col items-center gap-3 p-6 border-2 border-slate-100 rounded-2xl hover:border-sky-500 hover:bg-sky-50 transition-all group"
+                    className="flex flex-col items-center gap-3 p-4 border-2 border-slate-100 rounded-2xl hover:border-sky-500 hover:bg-sky-50 transition-all group"
                   >
-                    <CreditCard size={32} className="text-slate-400 group-hover:text-sky-600" />
-                    <span className="font-bold text-slate-700">Crédito</span>
+                    <CreditCard size={28} className="text-slate-400 group-hover:text-sky-600" />
+                    <span className="font-bold text-slate-700 text-sm">Crédito</span>
                   </button>
                 </div>
               </div>
