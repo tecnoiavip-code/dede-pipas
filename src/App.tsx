@@ -831,7 +831,7 @@ export default function App() {
           <button 
             onClick={() => setActiveTab('dashboard')}
             className={cn(
-              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 min-w-[72px] md:min-w-0",
+              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 md:min-w-0",
               activeTab === 'dashboard' ? "bg-white/20 md:bg-white text-white md:text-sky-700 shadow-sm md:shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-200 md:text-sky-100"
             )}
           >
@@ -841,7 +841,7 @@ export default function App() {
           <button 
             onClick={() => setActiveTab('pos')}
             className={cn(
-              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 min-w-[72px] md:min-w-0",
+              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 md:min-w-0",
               activeTab === 'pos' ? "bg-white/20 md:bg-white text-white md:text-sky-700 shadow-sm md:shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-200 md:text-sky-100"
             )}
           >
@@ -851,7 +851,7 @@ export default function App() {
           <button 
             onClick={() => setActiveTab('inventory')}
             className={cn(
-              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 min-w-[72px] md:min-w-0",
+              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 md:min-w-0",
               activeTab === 'inventory' ? "bg-white/20 md:bg-white text-white md:text-sky-700 shadow-sm md:shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-200 md:text-sky-100"
             )}
           >
@@ -861,7 +861,7 @@ export default function App() {
           <button 
             onClick={() => setActiveTab('finance')}
             className={cn(
-              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 min-w-[72px] md:min-w-0",
+              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 md:min-w-0",
               activeTab === 'finance' ? "bg-white/20 md:bg-white text-white md:text-sky-700 shadow-sm md:shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-200 md:text-sky-100"
             )}
           >
@@ -871,7 +871,7 @@ export default function App() {
           <button 
             onClick={() => setActiveTab('marketing')}
             className={cn(
-              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 min-w-[72px] md:min-w-0",
+              "flex-1 md:w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-xl transition-all duration-200 md:min-w-0",
               activeTab === 'marketing' ? "bg-white/20 md:bg-white text-white md:text-sky-700 shadow-sm md:shadow-lg font-bold" : "hover:bg-sky-600/50 text-sky-200 md:text-sky-100"
             )}
           >
@@ -883,7 +883,7 @@ export default function App() {
           <button 
             onClick={() => setActiveTab('settings')}
             className={cn(
-              "md:hidden flex-1 flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all duration-200 min-w-[72px]",
+              "md:hidden flex-1 flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all duration-200",
               activeTab === 'settings' ? "bg-white/20 text-white shadow-sm font-bold" : "hover:bg-sky-600/50 text-sky-200"
             )}
           >
@@ -949,9 +949,13 @@ export default function App() {
                 <span className="md:hidden">{stats.lowStockCount}</span>
               </div>
             )}
-            <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold border-2 border-white shadow-sm">
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 font-bold border-2 border-white shadow-sm hover:bg-sky-200 transition-colors"
+              title="Configurações"
+            >
               DP
-            </div>
+            </button>
           </div>
         </header>
         
