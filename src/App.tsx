@@ -230,6 +230,15 @@ export default function App() {
     start: format(new Date(), 'yyyy-MM-dd'),
     end: format(new Date(), 'yyyy-MM-dd')
   });
+  const [salesPage, setSalesPage] = useState(1);
+  const [withdrawalsPage, setWithdrawalsPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    setSalesPage(1);
+    setWithdrawalsPage(1);
+  }, [reportPeriod, customDateRange]);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -820,13 +829,17 @@ export default function App() {
     startDate.setHours(0, 0, 0, 0);
 
     const filteredSales = sales.filter(s => s.timestamp >= startDate.getTime() && s.timestamp <= endDate.getTime());
+    const filteredTransactions = transactions.filter(t => t.timestamp >= startDate.getTime() && t.timestamp <= endDate.getTime());
     
+    const withdrawals = filteredTransactions.filter(t => t.category === 'Retirada de Caixa' && t.type === 'despesa');
+    const totalWithdrawals = withdrawals.reduce((sum, t) => sum + t.amount, 0);
+
     // Group by day for the chart
-    const days: { [key: string]: { date: Date, total: number, profit: number } } = {};
+    const days: { [key: string]: { date: Date, total: number, profit: number, withdrawals: number } } = {};
     let current = new Date(startDate);
     while (current <= endDate) {
       const key = format(current, 'yyyy-MM-dd');
-      days[key] = { date: new Date(current), total: 0, profit: 0 };
+      days[key] = { date: new Date(current), total: 0, profit: 0, withdrawals: 0 };
       current.setDate(current.getDate() + 1);
     }
 
@@ -838,20 +851,31 @@ export default function App() {
       }
     });
 
+    withdrawals.forEach(w => {
+      const key = format(w.timestamp, 'yyyy-MM-dd');
+      if (days[key]) {
+        days[key].withdrawals += w.amount;
+      }
+    });
+
     const chart = Object.values(days).map(d => ({
       name: format(d.date, reportPeriod === 'year' ? 'MMM' : 'dd/MM', { locale: ptBR }),
       vendas: d.total,
-      lucro: d.profit
+      lucro: d.profit,
+      retiradas: d.withdrawals
     }));
 
     return {
       sales: filteredSales,
+      transactions: filteredTransactions,
+      withdrawals,
+      totalWithdrawals,
       totalRevenue: filteredSales.reduce((sum, s) => sum + s.total, 0),
       totalProfit: filteredSales.reduce((sum, s) => sum + s.profit, 0),
       count: filteredSales.length,
       chart
     };
-  }, [sales, reportPeriod, customDateRange]);
+  }, [sales, transactions, reportPeriod, customDateRange]);
 
   if (!isAuthReady) {
     return (
@@ -1413,7 +1437,7 @@ export default function App() {
               )}
 
               {/* Report Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="glass-card p-6 border-l-4 border-l-sky-500">
                   <p className="text-slate-500 text-sm font-medium mb-1">Vendas no Período</p>
                   <h3 className="text-2xl font-bold text-slate-800">{reportData.count}</h3>
@@ -1428,6 +1452,11 @@ export default function App() {
                   <p className="text-slate-500 text-sm font-medium mb-1">Lucro no Período</p>
                   <h3 className="text-2xl font-bold text-slate-800">R$ {reportData.totalProfit.toFixed(2)}</h3>
                   <p className="text-xs text-amber-600 mt-2 font-semibold">Resultado líquido</p>
+                </div>
+                <div className="glass-card p-6 border-l-4 border-l-rose-500">
+                  <p className="text-slate-500 text-sm font-medium mb-1">Retiradas (Sangria)</p>
+                  <h3 className="text-2xl font-bold text-slate-800">R$ {reportData.totalWithdrawals.toFixed(2)}</h3>
+                  <p className="text-xs text-rose-600 mt-2 font-semibold">Saídas do caixa</p>
                 </div>
               </div>
 
@@ -1445,6 +1474,7 @@ export default function App() {
                         />
                         <Bar dataKey="vendas" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={20} />
                         <Bar dataKey="lucro" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                        <Bar dataKey="retiradas" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={20} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1481,7 +1511,7 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {reportData.sales.map(sale => (
+                        {reportData.sales.slice((salesPage - 1) * ITEMS_PER_PAGE, salesPage * ITEMS_PER_PAGE).map(sale => (
                           <tr key={sale.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                             <td className="p-4 text-sm text-slate-600">{format(sale.timestamp, 'dd/MM/yyyy HH:mm')}</td>
                             <td className="p-4 text-sm text-slate-600">{sale.items.length} itens</td>
@@ -1501,6 +1531,81 @@ export default function App() {
                         )}
                       </tbody>
                     </table>
+                    {reportData.sales.length > ITEMS_PER_PAGE && (
+                      <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50">
+                        <span className="text-sm text-slate-500">
+                          Página {salesPage} de {Math.ceil(reportData.sales.length / ITEMS_PER_PAGE)}
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setSalesPage(p => Math.max(1, p - 1))}
+                            disabled={salesPage === 1}
+                            className="px-3 py-1 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Anterior
+                          </button>
+                          <button
+                            onClick={() => setSalesPage(p => Math.min(Math.ceil(reportData.sales.length / ITEMS_PER_PAGE), p + 1))}
+                            disabled={salesPage >= Math.ceil(reportData.sales.length / ITEMS_PER_PAGE)}
+                            className="px-3 py-1 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Próxima
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2 glass-card p-8">
+                  <h4 className="font-bold text-slate-800 text-lg mb-8">Retiradas Detalhadas (Sangria)</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-100">
+                          <th className="p-4 text-xs uppercase tracking-widest font-bold text-slate-500">Data</th>
+                          <th className="p-4 text-xs uppercase tracking-widest font-bold text-slate-500">Motivo / Descrição</th>
+                          <th className="p-4 text-xs uppercase tracking-widest font-bold text-slate-500">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData.withdrawals.slice((withdrawalsPage - 1) * ITEMS_PER_PAGE, withdrawalsPage * ITEMS_PER_PAGE).map(withdrawal => (
+                          <tr key={withdrawal.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                            <td className="p-4 text-sm text-slate-600">{format(withdrawal.timestamp, 'dd/MM/yyyy HH:mm')}</td>
+                            <td className="p-4 text-sm text-slate-600">{withdrawal.description}</td>
+                            <td className="p-4 font-bold text-rose-600">R$ {withdrawal.amount.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                        {reportData.withdrawals.length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="p-12 text-center text-slate-400 italic">Nenhuma retirada encontrada para este período.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    {reportData.withdrawals.length > ITEMS_PER_PAGE && (
+                      <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50">
+                        <span className="text-sm text-slate-500">
+                          Página {withdrawalsPage} de {Math.ceil(reportData.withdrawals.length / ITEMS_PER_PAGE)}
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setWithdrawalsPage(p => Math.max(1, p - 1))}
+                            disabled={withdrawalsPage === 1}
+                            className="px-3 py-1 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Anterior
+                          </button>
+                          <button
+                            onClick={() => setWithdrawalsPage(p => Math.min(Math.ceil(reportData.withdrawals.length / ITEMS_PER_PAGE), p + 1))}
+                            disabled={withdrawalsPage >= Math.ceil(reportData.withdrawals.length / ITEMS_PER_PAGE)}
+                            className="px-3 py-1 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Próxima
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
