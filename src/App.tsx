@@ -237,6 +237,10 @@ export default function App() {
   const [posSearchTerm, setPosSearchTerm] = useState('');
   const [paymentStep, setPaymentStep] = useState<'idle' | 'selecting' | 'pix_qr' | 'processing' | 'success'>('idle');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
+  const [withdrawalAmount, setWithdrawalAmount] = useState('');
+  const [withdrawalReason, setWithdrawalReason] = useState('');
+  const [isCloseRegisterModalOpen, setIsCloseRegisterModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
@@ -710,6 +714,58 @@ export default function App() {
     }
   };
 
+  const handleWithdrawal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    const amount = parseFloat(withdrawalAmount.replace(',', '.'));
+    if (isNaN(amount) || amount <= 0) {
+      alert('Por favor, insira um valor válido.');
+      return;
+    }
+    if (!withdrawalReason.trim()) {
+      alert('Por favor, insira o motivo da retirada.');
+      return;
+    }
+
+    try {
+      const txId = Math.random().toString(36).substring(2, 9);
+      await setDoc(doc(db, 'transactions', txId), {
+        id: txId,
+        type: 'despesa',
+        amount: amount,
+        description: withdrawalReason,
+        category: 'Retirada de Caixa',
+        timestamp: Date.now(),
+        uid: user.uid
+      });
+      setIsWithdrawalModalOpen(false);
+      setWithdrawalAmount('');
+      setWithdrawalReason('');
+      alert('Retirada registrada com sucesso!');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'transactions');
+    }
+  };
+
+  const todayCashStats = useMemo(() => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayStartMs = todayStart.getTime();
+
+    const todaySales = sales.filter(s => s.timestamp >= todayStartMs);
+    const cashSales = todaySales.filter(s => s.paymentMethod === 'dinheiro').reduce((sum, s) => sum + s.total, 0);
+    const cardSales = todaySales.filter(s => s.paymentMethod === 'cartao_credito' || s.paymentMethod === 'cartao_debito').reduce((sum, s) => sum + s.total, 0);
+    const pixSales = todaySales.filter(s => s.paymentMethod === 'pix').reduce((sum, s) => sum + s.total, 0);
+    
+    const withdrawals = transactions
+      .filter(t => t.timestamp >= todayStartMs && t.category === 'Retirada de Caixa' && t.type === 'despesa')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const expectedCash = cashSales - withdrawals;
+
+    return { cashSales, cardSales, pixSales, withdrawals, expectedCash };
+  }, [sales, transactions]);
+
   // --- Financial Stats ---
   const stats = useMemo(() => {
     const today = new Date().setHours(0,0,0,0);
@@ -1054,15 +1110,33 @@ export default function App() {
             <div className="flex-1 flex flex-col lg:flex-row gap-6 md:gap-8 animate-in slide-in-from-right duration-500 pb-24 md:pb-0">
               {/* Product Selection */}
               <div className="flex-1 flex flex-col gap-4 md:gap-6 min-h-[500px] lg:min-h-0">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                  <input 
-                    type="text" 
-                    value={posSearchTerm}
-                    onChange={(e) => setPosSearchTerm(e.target.value)}
-                    placeholder="Buscar produto por ID, nome ou categoria..." 
-                    className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all"
-                  />
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                    <input 
+                      type="text" 
+                      value={posSearchTerm}
+                      onChange={(e) => setPosSearchTerm(e.target.value)}
+                      placeholder="Buscar produto por ID, nome ou categoria..." 
+                      className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button 
+                      onClick={() => setIsWithdrawalModalOpen(true)}
+                      className="flex items-center gap-2 px-4 py-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-2xl font-bold hover:bg-amber-100 transition-colors"
+                    >
+                      <Minus size={20} />
+                      <span className="hidden sm:inline">Retirada</span>
+                    </button>
+                    <button 
+                      onClick={() => setIsCloseRegisterModalOpen(true)}
+                      className="flex items-center gap-2 px-4 py-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl font-bold hover:bg-emerald-100 transition-colors"
+                    >
+                      <CheckCircle2 size={20} />
+                      <span className="hidden sm:inline">Fechar Caixa</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-visible lg:overflow-y-auto pb-8">
@@ -2033,6 +2107,154 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* Product Modal */}
+      {/* Withdrawal Modal */}
+      {isWithdrawalModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-amber-50">
+              <h4 className="text-xl font-bold text-amber-800 flex items-center gap-2">
+                <Minus size={24} />
+                Retirada de Caixa (Sangria)
+              </h4>
+              <button 
+                onClick={() => setIsWithdrawalModalOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-amber-100 text-amber-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleWithdrawal} className="p-6 space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Valor da Retirada (R$)</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  min="0.01"
+                  required
+                  value={withdrawalAmount}
+                  onChange={e => setWithdrawalAmount(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all text-lg font-bold"
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Motivo / Descrição</label>
+                <input 
+                  type="text" 
+                  required
+                  value={withdrawalReason}
+                  onChange={e => setWithdrawalReason(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                  placeholder="Ex: Pagamento fornecedor, Retirada final do dia..."
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button 
+                  type="button"
+                  onClick={() => setIsWithdrawalModalOpen(false)}
+                  className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 py-3 px-4 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 transition-colors shadow-lg shadow-amber-200"
+                >
+                  Confirmar Retirada
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Close Register Modal */}
+      {isCloseRegisterModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-emerald-50">
+              <h4 className="text-xl font-bold text-emerald-800 flex items-center gap-2">
+                <CheckCircle2 size={24} />
+                Fechamento de Caixa
+              </h4>
+              <button 
+                onClick={() => setIsCloseRegisterModalOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-emerald-100 text-emerald-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="text-center mb-6">
+                <p className="text-sm text-slate-500 mb-1">Data do Fechamento</p>
+                <p className="text-lg font-bold text-slate-800">{format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+              </div>
+
+              <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Vendas em Dinheiro</span>
+                  <span className="font-bold text-slate-800">R$ {todayCashStats.cashSales.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Vendas Cartão/PIX</span>
+                  <span className="font-bold text-slate-800">R$ {(todayCashStats.cardSales + todayCashStats.pixSales).toFixed(2)}</span>
+                </div>
+                <div className="h-px bg-slate-200 my-2"></div>
+                <div className="flex justify-between items-center text-amber-600">
+                  <span>Retiradas (Sangria)</span>
+                  <span className="font-bold">- R$ {todayCashStats.withdrawals.toFixed(2)}</span>
+                </div>
+                <div className="h-px bg-slate-200 my-2"></div>
+                <div className="flex justify-between items-center text-lg">
+                  <span className="font-bold text-slate-800">Saldo Esperado (Gaveta)</span>
+                  <span className="font-black text-emerald-600">R$ {todayCashStats.expectedCash.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-sky-50 rounded-xl border border-sky-100">
+                <p className="text-sm text-sky-800 text-center">
+                  Confira se o valor em dinheiro na gaveta corresponde ao saldo esperado acima.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => setIsCloseRegisterModalOpen(false)}
+                  className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                >
+                  Voltar
+                </button>
+                <button 
+                  onClick={async () => {
+                    if (!user) return;
+                    try {
+                      const txId = Math.random().toString(36).substring(2, 9);
+                      await setDoc(doc(db, 'transactions', txId), {
+                        id: txId,
+                        type: 'receita',
+                        amount: 0,
+                        description: `Fechamento: Gaveta R$ ${todayCashStats.expectedCash.toFixed(2)} | Cartão/PIX R$ ${(todayCashStats.cardSales + todayCashStats.pixSales).toFixed(2)}`,
+                        category: 'Fechamento de Caixa',
+                        timestamp: Date.now(),
+                        uid: user.uid
+                      });
+                      setIsCloseRegisterModalOpen(false);
+                      alert('Caixa fechado com sucesso! O resumo foi salvo nas transações.');
+                    } catch (error) {
+                      handleFirestoreError(error, OperationType.WRITE, 'transactions');
+                    }
+                  }}
+                  className="flex-1 py-3 px-4 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Product Modal */}
       {isProductModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
